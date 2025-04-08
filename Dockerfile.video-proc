@@ -1,0 +1,50 @@
+FROM python:3.13-slim
+
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1
+
+WORKDIR /app
+
+RUN apt-get update && apt-get install -y \
+    build-essential \
+    libpq-dev \
+    postgresql-client \
+    curl \
+    wget \
+    ffmpeg \
+    libjpeg-dev \
+    zlib1g-dev \
+    libfreetype6-dev \
+    liblcms2-dev \
+    libimagequant-dev \
+    libxcb1-dev \
+    libwebp-dev \
+    && rm -rf /var/lib/apt/lists/*
+
+RUN wget https://johnvansickle.com/ffmpeg/builds/ffmpeg-git-amd64-static.tar.xz && \
+    tar -xvf ffmpeg-git-amd64-static.tar.xz && \
+    mv ffmpeg-*-static/ffmpeg /usr/local/bin/ && \
+    mv ffmpeg-*-static/ffprobe /usr/local/bin/ && \
+    rm -rf ffmpeg-git-amd64-static.tar.xz ffmpeg-*-static/
+
+RUN mkdir -p /tmp/video_processing && \
+chmod -R 777 /tmp/video_processing
+
+RUN addgroup --gid 1000 appuser && \
+    adduser --disabled-password --gecos '' --uid 1000 --gid 1000 appuser
+
+RUN mkdir -p /app/media/videos /app/media/processed /app/media/tmp && \
+    chown -R appuser:appuser /app/media /app/media/videos /app/media/processed /app/media/tmp && \
+    chmod -R u+w /app/media
+
+COPY requirements.txt .
+RUN pip install --upgrade pip \
+    && pip install --no-cache-dir -r requirements.txt \
+    && pip install --upgrade imageio imageio-ffmpeg
+
+
+COPY . .
+
+USER appuser
+
+CMD ["python", "manage.py", "runserver", "0.0.0.0:5000"]

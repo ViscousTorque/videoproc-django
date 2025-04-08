@@ -1,0 +1,160 @@
+services:
+  video-proc:
+    build:
+      context: .
+      dockerfile: Dockerfile.video-proc
+    ports:
+      - "5000:5000"
+    command: >
+      bash -c "opentelemetry-instrument python manage.py runserver 0.0.0.0:5000"
+    environment:
+      - OTEL_EXPORTER_OTLP_ENDPOINT=http://otel-collector:4317
+      - OTEL_SERVICE_NAME=video-processing
+      - OTEL_TRACES_SAMPLER=always_on
+      - DJANGO_SETTINGS_MODULE=config.settings
+      - DEBUG=1
+      - POSTGRES_DB=videoproc
+      - POSTGRES_USER=admin
+      - POSTGRES_PASSWORD=adminSecret
+      - POSTGRES_HOST=postgres
+      - CELERY_BROKER_URL=redis://redis:6379/0
+      - CELERY_RESULT_BACKEND=redis://redis:6379/0
+      - TMPDIR=/app/media/tmp
+    depends_on:
+      postgres:
+        condition: service_healthy
+      migrations:
+        condition: service_completed_successfully
+      redis:
+        condition: service_healthy
+      otel-collector:
+        condition: service_started
+    volumes:
+      - ./media:/app/media
+
+  migrations:
+    build:
+      context: .
+      dockerfile: Dockerfile.video-proc
+    command: >
+      sh -c "
+        echo 'Waiting for Postgres...';
+        while ! pg_isready -h postgres -U admin -d videoproc; do sleep 1; done;
+        echo 'Running migrations...';
+        python manage.py makemigrations;
+        python manage.py migrate;
+      "
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      - DJANGO_SETTINGS_MODULE=config.settings
+      - DATABASE_URL=postgres://admin:adminSecret@postgres:5432/videoproc
+      - POSTGRES_DB=videoproc
+      - POSTGRES_USER=admin
+      - POSTGRES_PASSWORD=adminSecret
+      - POSTGRES_HOST=postgres
+    volumes:
+      - ./media:/app/media
+
+  celery:
+    build:
+      context: .
+      dockerfile: Dockerfile.video-proc
+    user: "1000:1000"
+    command: opentelemetry-instrument celery -A config.celery worker --loglevel=debug -Q encoding
+    environment:
+      - OTEL_EXPORTER_OTLP_ENDPOINT=http://otel-collector:4317
+      - OTEL_SERVICE_NAME=celery-worker
+      - DJANGO_SETTINGS_MODULE=config.settings
+      - CELERY_BROKER_URL=redis://redis:6379/0
+      - CELERY_RESULT_BACKEND=redis://redis:6379/0
+      - POSTGRES_DB=videoproc
+      - POSTGRES_USER=admin
+      - POSTGRES_PASSWORD=adminSecret
+      - POSTGRES_HOST=postgres
+      - TMPDIR=/app/media/tmp
+    depends_on:
+      redis:
+        condition: service_healthy
+      otel-collector:
+        condition: service_started
+    volumes:
+      - ./media:/app/media
+
+  celery_beat:
+    build:
+      context: .
+      dockerfile: Dockerfile.video-proc
+    user: "1000:1000"
+    command: "opentelemetry-instrument celery -A config.celery beat --loglevel=debug --schedule=/app/media/tmp/celerybeat-schedule"
+    environment:
+      - OTEL_EXPORTER_OTLP_ENDPOINT=http://otel-collector:4317
+      - OTEL_SERVICE_NAME=celery-worker
+      - DJANGO_SETTINGS_MODULE=config.settings
+      - CELERY_BROKER_URL=redis://redis:6379/0
+      - CELERY_RESULT_BACKEND=redis://redis:6379/0
+      - TMPDIR=/app/media/tmp
+    depends_on:
+      - video-proc
+      - redis
+    volumes:
+      - ./media:/app/media
+
+  redis:
+    image: redis:7-alpine
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  jaeger:
+    image: jaegertracing/all-in-one:1.51
+    container_name: jaeger
+    environment:
+      - COLLECTOR_ZIPKIN_HOST_PORT=:9411
+      - COLLECTOR_OTLP_ENABLED=true
+    ports: 
+      - "16686:16686" 
+      - "9411:9411"
+
+  otel-collector:
+    image: otel/opentelemetry-collector-contrib:latest
+    command: ["--config=/etc/otel-collector-config.yaml"]
+    volumes:
+      - ./docker/otel/otel-collector-config.yaml:/etc/otel-collector-config.yaml
+    ports:
+      - "4317:4317"
+      - "13133:13133"
+    depends_on:
+      - jaeger
+
+  postgres:
+    image: postgres:latest
+    environment:
+      - POSTGRES_USER=admin
+      - POSTGRES_PASSWORD=adminSecret
+      - POSTGRES_DB=videoproc
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U admin -d videoproc"]
+      interval: 2s
+      timeout: 5s
+      retries: 10
+
+  pgadmin4:
+    image: dpage/pgadmin4
+    ports: 
+    - "8000:80"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      - PGADMIN_DEFAULT_EMAIL=admin@example.com
+      - PGADMIN_DEFAULT_PASSWORD=adminSecret
+
+volumes:
+  media: 
+  grafana-storage:  
