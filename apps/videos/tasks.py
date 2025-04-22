@@ -24,7 +24,11 @@ def process_video(video_id):
                 print(f"[WARNING] File too small to process: {input_path}")
                 return
             output_path = os.path.join(settings.MEDIA_ROOT, 'processed', os.path.basename(input_path))
-            with tracer.start_as_current_span("resize_and_write"):
+            with tracer.start_as_current_span("resize_and_write") as span:
+                output_path = video.file.path
+                file_size = os.path.getsize(output_path)
+                span.set_attribute("video.resize_and_write.file_size", file_size)
+                span.set_attribute("video.resize_and_write.file_path", output_path)
                 clip = VideoFileClip(input_path)
                 clip_resized = clip.resized(height=720)  # Resize with bilinear interpolation
                 clip_resized.write_videofile(output_path, codec='libx264', audio_codec='aac', temp_audiofile_path=tmp_dir)
