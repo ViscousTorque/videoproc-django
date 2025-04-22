@@ -147,12 +147,15 @@ celery_beat:
 # 	docker compose -f docker-compose.dev.yml down; \
 # 	exit $$EXIT_CODE
 
-project:
-	mkdir -p media/tmp media/videos media/processed
-	COMPOSE_BAKE=true docker compose -f docker-compose.dev.yml up --build 
+project-up:
+	docker compose -f docker-compose.dev.yml up
 
-proj_down:
+project-down:
 	docker compose -f docker-compose.dev.yml down
+
+project-build:
+	mkdir -p media/tmp media/videos media/processed
+	COMPOSE_BAKE=true docker compose -f docker-compose.dev.yml build --no-cache
 	
 # unittests:
 # 	coverage run manage.py test --settings=config.settings_test
