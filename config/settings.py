@@ -1,3 +1,16 @@
+"""
+Config for video proc
+"""
+import os
+from pathlib import Path
+
+from opentelemetry import trace
+from opentelemetry.exporter.otlp.proto.grpc.trace_exporter import OTLPSpanExporter
+from opentelemetry.sdk.trace import TracerProvider
+from opentelemetry.sdk.trace.export import BatchSpanProcessor
+
+from celery.schedules import crontab
+
 ROOT_URLCONF = 'config.urls'
 
 ##### Dev settings
@@ -8,15 +21,12 @@ DJANGO_SETTINGS_MODULE = 'config.settings'
 
 # In settings.py
 
-from opentelemetry import trace
-from opentelemetry.exporter.otlp.proto.grpc.trace_exporter import OTLPSpanExporter
-from opentelemetry.sdk.trace import TracerProvider
-from opentelemetry.sdk.trace.export import BatchSpanProcessor
+
 
 # Set the tracer provider
 trace.set_tracer_provider(TracerProvider())
 
-import os
+
 
 OTEL_EXPORTER_OTLP_ENDPOINT = os.getenv("OTEL_EXPORTER_OTLP_ENDPOINT", "http://localhost:4317")
 
@@ -24,7 +34,7 @@ otlp_exporter = OTLPSpanExporter(OTEL_EXPORTER_OTLP_ENDPOINT, insecure=True)
 
 trace.get_tracer_provider().add_span_processor(BatchSpanProcessor(otlp_exporter))
 
-ALLOWED_HOSTS = os.getenv("DJANGO_ALLOWED_HOSTS", "localhost,backend,0.0.0.0").split(",")
+ALLOWED_HOSTS = os.getenv("DJANGO_ALLOWED_HOSTS", "localhost,backend,0.0.0.0,127.0.0.1").split(",")
 
 INSTALLED_APPS = [
     'django.contrib.admin',
@@ -40,7 +50,6 @@ INSTALLED_APPS = [
     'apps.videos',
 ]
 
-from pathlib import Path
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -59,7 +68,6 @@ CELERY_TASK_SERIALIZER = 'json'
 CELERY_RESULT_BACKEND = os.getenv('CELERY_RESULT_BACKEND', "redis://localhost:6379/0")
 CELERY_BROKER_CONNECTION_RETRY_ON_STARTUP = True
 
-from celery.schedules import crontab
 CELERY_BEAT_SCHEDULE = {
     'retry-failed-videos': {
         'task': 'apps.videos.tasks.retry_failed_videos',
@@ -68,10 +76,9 @@ CELERY_BEAT_SCHEDULE = {
 }
 
 # Celery Logging configuration
-import logging
 
 CELERYD_LOG_FORMAT = '[%(asctime)s: %(levelname)s] %(message)s'
-CELERYD_LOG_LEVEL = 'DEBUG'  # or DEBUG, ERROR as per your needs
+CELERYD_LOG_LEVEL = 'INFO'  # or DEBUG, ERROR as per your needs
 CELERYD_LOG_FILE = 'celery.log'  # Optional log file for Celery worker logs
 
 # If you are using Celery with Django's logging
@@ -136,7 +143,3 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 STATIC_URL = '/static/'
 
 SECRET_KEY = os.getenv("DJANGO_SECRET_KEY", "your-default-secret-key")
-
-
-
-
