@@ -156,6 +156,9 @@ project-down:
 project-build:
 	mkdir -p media/tmp media/videos media/processed
 	COMPOSE_BAKE=true docker compose -f docker-compose.dev.yml build --no-cache
+
+videoproc:
+	docker compose -f docker-compose.dev.yml build video-proc --no-cache
 	
 # unittests:
 # 	coverage run manage.py test --settings=config.settings_test

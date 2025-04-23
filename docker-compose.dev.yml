@@ -60,7 +60,7 @@ services:
   celery:
     build:
       context: .
-      dockerfile: Dockerfile.video-proc
+      dockerfile: Dockerfile.celery
     user: "1000:1000"
     command: opentelemetry-instrument celery -A config.celery worker --loglevel=debug -Q encoding
     environment:
