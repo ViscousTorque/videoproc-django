@@ -9,6 +9,7 @@ A simple idea to play around with video processing
 * https://zulko.github.io/moviepy/reference/reference/moviepy.video.VideoClip.VideoClip.html#moviepy.video.VideoClip.VideoClip.resized
 
 # TODOs
+* Add admin views to capture state of background tasks
 * Write unittests and component tests
 * Refactor
 * ci test docker compose
@@ -45,4 +46,10 @@ http://localhost:16686
 * make startLocalEnv
 * TBD
 
+# create a new 5  min video
+```
+ffmpeg -f lavfi -i smptebars=size=1280x720:rate=30   -vf "drawtext=fontfile=/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf: \
+        text='%{pts\\:hms}': fontcolor=white: fontsize=100: \
+        x=(w-text_w)/2: y=(h-text_h)/2"   -t 300 -r 30 -c:v libx264 -pix_fmt yuv420p count_up_5min_clock.mp4
+```
 

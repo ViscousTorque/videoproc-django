@@ -23,20 +23,34 @@ def process_video(video_id):
             if os.path.getsize(input_path) < 1000:
                 print(f"[WARNING] File too small to process: {input_path}")
                 return
-            output_path = os.path.join(settings.MEDIA_ROOT, 'processed', os.path.basename(input_path))
+            filename = os.path.basename(input_path)
+            output_filename = f"processed_{filename}"
+            output_path = os.path.join(settings.MEDIA_ROOT, 'processed', output_filename)
+            os.makedirs(os.path.dirname(output_path), exist_ok=True)
+
             with tracer.start_as_current_span("resize_and_write") as span:
-                output_path = video.file.path
+                clip = VideoFileClip(input_path)
+                clip_resized = clip.resized(height=720)
+                clip_resized.write_videofile(output_path, codec='libx264', audio_codec='aac')
+
                 file_size = os.path.getsize(output_path)
                 span.set_attribute("video.resize_and_write.file_size", file_size)
                 span.set_attribute("video.resize_and_write.file_path", output_path)
-                clip = VideoFileClip(input_path)
-                clip_resized = clip.resized(height=720)  # Resize with bilinear interpolation
-                clip_resized.write_videofile(output_path, codec='libx264', audio_codec='aac', temp_audiofile_path=tmp_dir)
 
-            video.output_file.name = output_path.split(settings.MEDIA_ROOT)[-1]  # Save the relative path
+            video.output_file.name = os.path.relpath(output_path, settings.MEDIA_ROOT)
             video.processed = True
             video.processed_at = timezone.now()
+            video.status = 'done'
             video.save()
 
         except Exception as e:
+            print(f"[ERROR] Video processing failed: {e}")
+            video.status = 'failed'
+            video.save()
+
+
+        except Exception as e:
             print(f"[ERROR] Failed to process video {video_id}: {e}")
+            video.status = 'failed'
+            video.save()
+

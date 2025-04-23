@@ -17,6 +17,8 @@ def upload_video(request):
             form = VideoUploadForm(request.POST, request.FILES)
             if form.is_valid():
                 video = form.save()
+                video.status = 'pending'
+                video.save(update_fields=['status'])
                 file_path = video.file.path
                 file_size = os.path.getsize(file_path)
                 span.set_attribute("video.uploaded.file_size", file_size)
