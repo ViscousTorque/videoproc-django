@@ -10,6 +10,7 @@ A simple idea to play around with video processing
 
 # TODOs
 * Add admin views to capture state of background tasks
+* Missing retry - the @shared_task def retry_failed_videos()
 * Write unittests and component tests
 * Refactor
 * ci test docker compose
