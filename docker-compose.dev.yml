@@ -20,6 +20,7 @@ services:
       - CELERY_BROKER_URL=redis://redis:6379/0
       - CELERY_RESULT_BACKEND=redis://redis:6379/0
       - TMPDIR=/app/media/tmp
+      - TZ=Europe/London
     depends_on:
       postgres:
         condition: service_healthy
@@ -54,6 +55,7 @@ services:
       - POSTGRES_USER=admin
       - POSTGRES_PASSWORD=adminSecret
       - POSTGRES_HOST=postgres
+      - TZ=Europe/London
     volumes:
       - ./media:/app/media
 
@@ -74,6 +76,7 @@ services:
       - POSTGRES_PASSWORD=adminSecret
       - POSTGRES_HOST=postgres
       - TMPDIR=/app/media/tmp
+      - TZ=Europe/London
     depends_on:
       redis:
         condition: service_healthy
@@ -154,6 +157,7 @@ services:
     environment:
       - PGADMIN_DEFAULT_EMAIL=admin@example.com
       - PGADMIN_DEFAULT_PASSWORD=adminSecret
+      - TZ=Europe/London
 
 volumes:
   media: 

@@ -11,6 +11,9 @@ from opentelemetry.sdk.trace.export import BatchSpanProcessor
 
 from celery.schedules import crontab
 
+TIME_ZONE = 'Europe/London'
+USE_TZ = True
+
 ROOT_URLCONF = 'config.urls'
 
 ##### Dev settings
@@ -19,14 +22,8 @@ DEBUG = True
 
 DJANGO_SETTINGS_MODULE = 'config.settings'
 
-# In settings.py
-
-
-
 # Set the tracer provider
 trace.set_tracer_provider(TracerProvider())
-
-
 
 OTEL_EXPORTER_OTLP_ENDPOINT = os.getenv("OTEL_EXPORTER_OTLP_ENDPOINT", "http://localhost:4317")
 
