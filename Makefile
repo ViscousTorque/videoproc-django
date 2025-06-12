@@ -90,6 +90,8 @@ create-superuser:
 	python manage.py createsuperuser
 
 startLocalEnv:
+	@$(MAKE) network
+	@sleep 1
 	@$(MAKE) postgres
 	@sleep 2
 	@$(MAKE) pgadmin4
@@ -154,6 +156,7 @@ project-down:
 	docker compose -f docker-compose.dev.yml down
 
 project-build:
+	rm -rf media
 	mkdir -p media/tmp media/videos media/processed
 	COMPOSE_BAKE=true docker compose -f docker-compose.dev.yml build --no-cache
 

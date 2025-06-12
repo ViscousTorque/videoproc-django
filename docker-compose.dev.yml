@@ -6,7 +6,10 @@ services:
     ports:
       - "5000:5000"
     command: >
-      opentelemetry-instrument gunicorn config.wsgi:application --workers 5 --bind 0.0.0.0:5000
+      opentelemetry-instrument gunicorn config.wsgi:application
+      --workers 5
+      --bind 0.0.0.0:5000
+      --timeout 120
     environment:
       - OTEL_EXPORTER_OTLP_ENDPOINT=http://otel-collector:4317
       - OTEL_SERVICE_NAME=video-processing
